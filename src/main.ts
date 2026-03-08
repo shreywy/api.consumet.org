@@ -31,7 +31,7 @@ const fastify = Fastify({
   maxParamLength: 1000,
   logger: true,
 });
-export const tmdbApi = process.env.TMDB_KEY && process.env.TMDB_KEY;
+export const tmdbApi = process.env.TMDB_KEY || 'c232e863a327a8137fd5c93ce38ca74d';
 
 // ── Global Axios proxy ─────────────────────────────────────────────────
 // The PROXY env var is a residential HTTP proxy (http://user:pass@ip:port).
