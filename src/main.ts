@@ -2,6 +2,7 @@ require('dotenv').config();
 import Redis from 'ioredis';
 import Fastify from 'fastify';
 import FastifyCors from '@fastify/cors';
+import axios from 'axios';
 import fs from 'fs';
 
 import books from './routes/books';
@@ -32,20 +33,31 @@ const fastify = Fastify({
 });
 export const tmdbApi = process.env.TMDB_KEY && process.env.TMDB_KEY;
 
-// ── Proxy config helper ────────────────────────────────────────────────
-// Validates the PROXY env var and returns a config object for @consumet/extensions,
-// or undefined if no proxy is set or the URL is malformed.
-export const proxyConfig: { url: string } | undefined = (() => {
-  const raw = process.env.PROXY;
-  if (!raw) return undefined;
+// ── Global Axios proxy ─────────────────────────────────────────────────
+// The PROXY env var is a residential HTTP proxy (http://user:pass@ip:port).
+// @consumet/extensions uses Axios for all HTTP requests internally.
+// We set Axios defaults globally so ALL requests go through the proxy.
+// NOTE: Do NOT use proxyConfig on providers — that's a CORS proxy prefix, not HTTP proxy.
+if (process.env.PROXY) {
   try {
-    new URL(raw); // validate — throws if malformed
-    return { url: raw };
-  } catch {
-    console.error(`[Proxy] Malformed PROXY URL: "${raw}" — falling back to direct connection`);
-    return undefined;
+    const parsed = new URL(process.env.PROXY);
+    axios.defaults.proxy = {
+      host: parsed.hostname,
+      port: Number(parsed.port),
+      protocol: parsed.protocol.replace(':', ''),
+      ...(parsed.username && {
+        auth: {
+          username: decodeURIComponent(parsed.username),
+          password: decodeURIComponent(parsed.password),
+        },
+      }),
+    };
+    console.log(chalk.green(`[Proxy] Global Axios proxy set: ${parsed.hostname}:${parsed.port}`));
+  } catch (e) {
+    console.error(chalk.red(`[Proxy] Malformed PROXY URL: "${process.env.PROXY}" — running without proxy`));
   }
-})();
+}
+
 (async () => {
   const PORT = Number(process.env.PORT) || 3000;
 
@@ -146,12 +158,6 @@ export const proxyConfig: { url: string } | undefined = (() => {
     console.warn(chalk.yellowBright('Redis not found. Cache disabled.'));
   } else {
     console.log(chalk.green(`Redis connected. Default Cache TTL: ${REDIS_TTL} seconds`));
-  }
-
-  if (proxyConfig) {
-    console.log(chalk.green(`Proxy configured: requests will be routed through proxy`));
-  } else if (process.env.PROXY) {
-    console.warn(chalk.yellowBright('PROXY env var is set but URL is malformed — running without proxy'));
   }
 
   if (!process.env.TMDB_KEY)

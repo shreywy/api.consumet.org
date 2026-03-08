@@ -3,12 +3,11 @@ import { ANIME } from '@consumet/extensions';
 import { StreamingServers, SubOrSub } from '@consumet/extensions/dist/models';
 
 import cache from '../../utils/cache';
-import { redis, REDIS_TTL, proxyConfig } from '../../main';
+import { redis, REDIS_TTL } from '../../main';
 import { Redis } from 'ioredis';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   const hianime = new ANIME.Hianime();
-  if (proxyConfig) (hianime as any).proxyConfig = proxyConfig;
 
   fastify.get('/', (_, rp) => {
     rp.status(200).send({

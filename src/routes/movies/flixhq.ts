@@ -3,12 +3,11 @@ import { MOVIES } from '@consumet/extensions';
 import { StreamingServers } from '@consumet/extensions/dist/models';
 
 import cache from '../../utils/cache';
-import { redis, REDIS_TTL, proxyConfig } from '../../main';
+import { redis, REDIS_TTL } from '../../main';
 import { Redis } from 'ioredis';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   const flixhq = new MOVIES.FlixHQ();
-  if (proxyConfig) (flixhq as any).proxyConfig = proxyConfig;
 
   fastify.get('/', (_, rp) => {
     rp.status(200).send({

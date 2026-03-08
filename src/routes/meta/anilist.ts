@@ -6,7 +6,7 @@ import Anilist from '@consumet/extensions/dist/providers/meta/anilist';
 import { StreamingServers } from '@consumet/extensions/dist/models';
 
 import cache from '../../utils/cache';
-import { redis, proxyConfig } from '../../main';
+import { redis } from '../../main';
 import Hianime from '@consumet/extensions/dist/providers/anime/hianime';
 import Providers from '../../utils/providers';
 
@@ -406,12 +406,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 };
 
 const generateAnilistMeta = (provider: string | undefined = undefined): Anilist => {
-  const hianime = new Hianime();
-  if (proxyConfig) {
-    (hianime as any).proxyConfig = proxyConfig;
-    return new Anilist(hianime, proxyConfig);
-  }
-  return new Anilist(hianime);
+  return new Anilist(new Hianime());
 };
 
 export default routes;
