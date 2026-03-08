@@ -35,13 +35,13 @@ export const tmdbApi = process.env.TMDB_KEY && process.env.TMDB_KEY;
 
 // ── Global Axios proxy ─────────────────────────────────────────────────
 // The PROXY env var is a residential HTTP proxy (http://user:pass@ip:port).
-// @consumet/extensions uses Axios for all HTTP requests internally.
-// We set Axios defaults globally so ALL requests go through the proxy.
-// NOTE: Do NOT use proxyConfig on providers — that's a CORS proxy prefix, not HTTP proxy.
+// @consumet/extensions creates its OWN Axios instances via axios.create(),
+// bypassing axios.defaults. We monkey-patch axios.create() to inject the
+// proxy config into every instance automatically.
 if (process.env.PROXY) {
   try {
     const parsed = new URL(process.env.PROXY);
-    axios.defaults.proxy = {
+    const proxyObj = {
       host: parsed.hostname,
       port: Number(parsed.port),
       protocol: parsed.protocol.replace(':', ''),
@@ -52,7 +52,18 @@ if (process.env.PROXY) {
         },
       }),
     };
-    console.log(chalk.green(`[Proxy] Global Axios proxy set: ${parsed.hostname}:${parsed.port}`));
+
+    // Also set on defaults for any direct axios() calls
+    axios.defaults.proxy = proxyObj;
+
+    // Monkey-patch axios.create to inject proxy into every new instance
+    const originalCreate = axios.create.bind(axios);
+    (axios as any).create = function(config?: any) {
+      const instance = originalCreate({ ...config, proxy: proxyObj });
+      return instance;
+    };
+
+    console.log(chalk.green(`[Proxy] Patched axios.create — all instances route through ${parsed.hostname}:${parsed.port}`));
   } catch (e) {
     console.error(chalk.red(`[Proxy] Malformed PROXY URL: "${process.env.PROXY}" — running without proxy`));
   }
