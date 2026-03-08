@@ -81,15 +81,12 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
       tmdb = new META.TMDB(tmdbApi, possibleProvider);
     }
     try {
-      const res = await tmdb
-        .fetchEpisodeSources(episodeId, id, server)
-        .catch((err) => reply.status(404).send({ message: err }));
-
+      const res = await tmdb.fetchEpisodeSources(episodeId, id, server);
       reply.status(200).send(res);
     } catch (err) {
       reply
         .status(500)
-        .send({ message: 'Something went wrong. Contact developer for help.' });
+        .send({ message: err instanceof Error ? err.message : 'Something went wrong. Contact developer for help.' });
     }
   };
   fastify.get('/watch', watch);
