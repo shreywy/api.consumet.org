@@ -41,9 +41,18 @@ if (process.env.CF_PROXY) {
   const cfProxy = process.env.CF_PROXY;
   console.log(chalk.green(`[Proxy] Cloudflare Worker proxy enabled: ${cfProxy}`));
 
+  // Neutralize PROXY env var so axios doesn't auto-detect it
+  delete process.env.PROXY;
+  delete process.env.proxy;
+  delete process.env.HTTP_PROXY;
+  delete process.env.http_proxy;
+  delete process.env.HTTPS_PROXY;
+  delete process.env.https_proxy;
+  axios.defaults.proxy = false;
+
   const originalCreate = axios.create.bind(axios);
   (axios as any).create = function(config?: any) {
-    const instance = originalCreate(config);
+    const instance = originalCreate({ ...config, proxy: false });
 
     // Request interceptor: rewrite URL through CF Worker
     instance.interceptors.request.use((reqConfig: any) => {
