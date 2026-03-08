@@ -1,6 +1,6 @@
 import { Redis } from 'ioredis';
 import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from 'fastify';
-import { META } from '@consumet/extensions';
+import { META, PROVIDERS_LIST } from '@consumet/extensions';
 import { Genres, SubOrSub } from '@consumet/extensions/dist/models';
 import Anilist from '@consumet/extensions/dist/providers/meta/anilist';
 import { StreamingServers } from '@consumet/extensions/dist/models';
@@ -406,6 +406,12 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 };
 
 const generateAnilistMeta = (provider: string | undefined = undefined): Anilist => {
+  if (provider) {
+    const found = PROVIDERS_LIST.ANIME.find(
+      (p: any) => p.toString.name.toLowerCase() === provider.toLowerCase(),
+    );
+    if (found) return new Anilist(found);
+  }
   return new Anilist(new Hianime());
 };
 

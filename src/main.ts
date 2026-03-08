@@ -34,11 +34,34 @@ const fastify = Fastify({
 export const tmdbApi = process.env.TMDB_KEY || 'c232e863a327a8137fd5c93ce38ca74d';
 
 // ── Global Axios proxy ─────────────────────────────────────────────────
-// The PROXY env var is a residential HTTP proxy (http://user:pass@ip:port).
-// @consumet/extensions creates its OWN Axios instances via axios.create(),
-// bypassing axios.defaults. We monkey-patch axios.create() to inject the
-// proxy config into every instance automatically.
-if (process.env.PROXY) {
+// CF_PROXY: Cloudflare Worker URL-prefix proxy (e.g. https://my-proxy.workers.dev/?url=)
+// All outgoing requests are rewritten: targetUrl → CF_PROXY + encodeURIComponent(targetUrl)
+// PROXY: Legacy HTTP/SOCKS proxy (http://user:pass@ip:port) — fallback if CF_PROXY is not set
+if (process.env.CF_PROXY) {
+  const cfProxy = process.env.CF_PROXY;
+  console.log(chalk.green(`[Proxy] Cloudflare Worker proxy enabled: ${cfProxy}`));
+
+  const originalCreate = axios.create.bind(axios);
+  (axios as any).create = function(config?: any) {
+    const instance = originalCreate(config);
+
+    // Request interceptor: rewrite URL through CF Worker
+    instance.interceptors.request.use((reqConfig: any) => {
+      const targetUrl = reqConfig.url || '';
+      // Only proxy absolute URLs (http/https) — skip relative paths
+      if (/^https?:\/\//i.test(targetUrl)) {
+        reqConfig.url = cfProxy + encodeURIComponent(targetUrl);
+        // Preserve original headers for the Worker to forward
+        reqConfig.headers.set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      }
+      // Disable any axios-level proxy to avoid double-proxying
+      reqConfig.proxy = false;
+      return reqConfig;
+    });
+
+    return instance;
+  };
+} else if (process.env.PROXY) {
   try {
     const parsed = new URL(process.env.PROXY);
     const proxyObj = {
@@ -53,10 +76,8 @@ if (process.env.PROXY) {
       }),
     };
 
-    // Also set on defaults for any direct axios() calls
     axios.defaults.proxy = proxyObj;
 
-    // Monkey-patch axios.create to inject proxy into every new instance
     const originalCreate = axios.create.bind(axios);
     (axios as any).create = function(config?: any) {
       const instance = originalCreate({ ...config, proxy: proxyObj });
