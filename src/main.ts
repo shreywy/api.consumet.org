@@ -31,6 +31,21 @@ const fastify = Fastify({
   logger: true,
 });
 export const tmdbApi = process.env.TMDB_KEY && process.env.TMDB_KEY;
+
+// ── Proxy config helper ────────────────────────────────────────────────
+// Validates the PROXY env var and returns a config object for @consumet/extensions,
+// or undefined if no proxy is set or the URL is malformed.
+export const proxyConfig: { url: string } | undefined = (() => {
+  const raw = process.env.PROXY;
+  if (!raw) return undefined;
+  try {
+    new URL(raw); // validate — throws if malformed
+    return { url: raw };
+  } catch {
+    console.error(`[Proxy] Malformed PROXY URL: "${raw}" — falling back to direct connection`);
+    return undefined;
+  }
+})();
 (async () => {
   const PORT = Number(process.env.PORT) || 3000;
 
@@ -131,6 +146,12 @@ export const tmdbApi = process.env.TMDB_KEY && process.env.TMDB_KEY;
     console.warn(chalk.yellowBright('Redis not found. Cache disabled.'));
   } else {
     console.log(chalk.green(`Redis connected. Default Cache TTL: ${REDIS_TTL} seconds`));
+  }
+
+  if (proxyConfig) {
+    console.log(chalk.green(`Proxy configured: requests will be routed through proxy`));
+  } else if (process.env.PROXY) {
+    console.warn(chalk.yellowBright('PROXY env var is set but URL is malformed — running without proxy'));
   }
 
   if (!process.env.TMDB_KEY)

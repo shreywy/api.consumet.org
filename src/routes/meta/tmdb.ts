@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply, FastifyInstance, RegisterOptions } from 'fastify';
 import { META, PROVIDERS_LIST, StreamingServers } from '@consumet/extensions';
-import { tmdbApi } from '../../main';
+import { tmdbApi, proxyConfig } from '../../main';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   fastify.get('/', (_, rp) => {
@@ -15,7 +15,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   fastify.get('/:query', async (request: FastifyRequest, reply: FastifyReply) => {
     const query = (request.params as { query: string }).query;
     const page = (request.query as { page: number }).page;
-    const tmdb = new META.TMDB(tmdbApi);
+    const tmdb = new META.TMDB(tmdbApi, undefined, proxyConfig);
 
     const res = await tmdb.search(query, page);
 
@@ -26,7 +26,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     const id = (request.params as { id: string }).id;
     const type = (request.query as { type: string }).type;
     const provider = (request.query as { provider?: string }).provider;
-    let tmdb = new META.TMDB(tmdbApi);
+    let tmdb = new META.TMDB(tmdbApi, undefined, proxyConfig);
 
     if (!type) return reply.status(400).send({ message: "The 'type' query is required" });
 
@@ -34,7 +34,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
       const possibleProvider = PROVIDERS_LIST.MOVIES.find(
         (p) => p.name.toLowerCase() === provider.toLocaleLowerCase(),
       );
-      tmdb = new META.TMDB(tmdbApi, possibleProvider);
+      tmdb = new META.TMDB(tmdbApi, possibleProvider, proxyConfig);
     }
 
     const res = await tmdb.fetchMediaInfo(id, type);
@@ -54,7 +54,7 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 
     const page = (request.query as { page?: number }).page || 1;
 
-    const tmdb = new META.TMDB(tmdbApi);
+    const tmdb = new META.TMDB(tmdbApi, undefined, proxyConfig);
 
     try {
       const res = await tmdb.fetchTrending(type, timePeriod, page);
@@ -73,12 +73,12 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
     const provider = (request.query as { provider?: string }).provider;
     const server = (request.query as { server?: StreamingServers }).server;
 
-    let tmdb = new META.TMDB(tmdbApi);
+    let tmdb = new META.TMDB(tmdbApi, undefined, proxyConfig);
     if (typeof provider !== 'undefined') {
       const possibleProvider = PROVIDERS_LIST.MOVIES.find(
         (p) => p.name.toLowerCase() === provider.toLocaleLowerCase(),
       );
-      tmdb = new META.TMDB(tmdbApi, possibleProvider);
+      tmdb = new META.TMDB(tmdbApi, possibleProvider, proxyConfig);
     }
     try {
       const res = await tmdb
