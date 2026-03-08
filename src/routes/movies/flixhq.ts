@@ -8,7 +8,7 @@ import { Redis } from 'ioredis';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   const flixhq = new MOVIES.FlixHQ();
-  if (proxyConfig) flixhq.proxyConfig = proxyConfig;
+  if (proxyConfig) (flixhq as any).proxyConfig = proxyConfig;
 
   fastify.get('/', (_, rp) => {
     rp.status(200).send({

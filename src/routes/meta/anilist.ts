@@ -406,10 +406,12 @@ const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
 };
 
 const generateAnilistMeta = (provider: string | undefined = undefined): Anilist => {
+  const hianime = new Hianime();
   if (proxyConfig) {
-    return new Anilist(new Hianime(), proxyConfig);
+    (hianime as any).proxyConfig = proxyConfig;
+    return new Anilist(hianime, proxyConfig);
   }
-  return new Anilist(new Hianime());
+  return new Anilist(hianime);
 };
 
 export default routes;

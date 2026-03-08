@@ -8,7 +8,7 @@ import { Redis } from 'ioredis';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   const dramacool = new MOVIES.DramaCool();
-  if (proxyConfig) dramacool.proxyConfig = proxyConfig;
+  if (proxyConfig) (dramacool as any).proxyConfig = proxyConfig;
 
   fastify.get('/', (_, rp) => {
     rp.status(200).send({

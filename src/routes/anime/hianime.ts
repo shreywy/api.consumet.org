@@ -8,7 +8,7 @@ import { Redis } from 'ioredis';
 
 const routes = async (fastify: FastifyInstance, options: RegisterOptions) => {
   const hianime = new ANIME.Hianime();
-  if (proxyConfig) hianime.proxyConfig = proxyConfig;
+  if (proxyConfig) (hianime as any).proxyConfig = proxyConfig;
 
   fastify.get('/', (_, rp) => {
     rp.status(200).send({
